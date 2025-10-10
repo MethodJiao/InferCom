@@ -123,7 +123,8 @@ class Utils:
 
 class UnixCoder:
     def __init__(self, device='7'):
-        model_name = '/home/dengle/unixcoder'
+        # model_name = '/home/dengle/unixcoder'
+        model_name ="microsoft/unixcoder-base"
         if device != 'cpu':
             device = f'cuda:{device}'
         self.device = torch.device(device)

@@ -40,10 +40,10 @@ Here is the code prefix:
 Complete the code (do not repeat the prefix):
 '''
         self.client = OpenAI(
-            base_url='*',
+            base_url='http://10.0.200.1:1025/v1',
             api_key="*"
         )
-        self.model="claude-3-7-sonnet-20250219"
+        self.model="DeepSeek-V3-0324"
 
     def complete(self, prefix):
         content = self.prompt.replace("<prefix>", prefix)
@@ -78,9 +78,9 @@ class ApiModel:
                 'model': 'deepseek'
             },
             'n3_ds': {
-                'url': "http://localhost:8011/v1",
-                'model_name': '/nasdata/Model/deepseek-coder-6.7b-base',
-                'model': 'deepseek'
+                'url': "http://10.0.200.1:1025/v1",
+                'model_name': 'DeepSeek-V3-0324',
+                'model': 'DeepSeek-V3-0324'
             },
             'n3_cl': {
                 'url': "http://localhost:8010/v1",
@@ -174,7 +174,7 @@ if __name__ == '__main__':
 
     m_type = 'sota'
     benchmark = 'sota_test'
-    file_names = ['rc_python.jsonl', 'ours_python.jsonl']
+    file_names = ['pybenchmark_2k.jsonl']
     for file_name in file_names:
         in_path = f'prompts/{benchmark}/{file_name}'
         out_path = f'predictions/{benchmark}/{file_name}'

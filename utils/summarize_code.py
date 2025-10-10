@@ -63,14 +63,16 @@ class SummaryVllmModel:
 
 class SummaryAPIModel:
     
-    def __init__(self, url="http://localhost:8085/v1"):
+    # def __init__(self, url="http://localhost:8085/v1"):
+    def __init__(self, url="http://10.0.200.1:1025/v1"):#d
+    
         self.client = OpenAI(api_key="*", base_url=url)
         
     def summarize_code(self, prompt, retries=3):
         for i in range(retries):
-            try:
+            try:# model="llama0",
                 response = self.client.chat.completions.create(
-                    model="llama0",
+                    model="DeepSeek-V3-0324",
                     messages=[
                         {"role": "system", "content": "You are an expert programmer"},
                         {"role": "user", "content": prompt},

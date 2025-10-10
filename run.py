@@ -77,18 +77,18 @@ def combine_rc_and_api(args):
         
 import argparse
 
-def main():
+def main1():
     parser = argparse.ArgumentParser()
     # 添加参数
     parser.add_argument('--summary_cuda', type=int, default=-1)
     parser.add_argument('--lang', type=str, default='python', choices=['python', 'java'])
-    parser.add_argument('--repo_dir', type=str, default='./repos/python', choices=['repos/python', 'repos/java', 'repos/sota_test', 'repos/repoeval_api', '/data/dengle/repofuse/crosscodeeval_rawdata'])
-    parser.add_argument('--encode_cuda', type=str, default='cpu')
-    parser.add_argument('--benchmark', type=str, default='projbench', choices=['projbench', 'cceval', 'sota_test', 'repoeval_api'])
+    parser.add_argument('--repo_dir', type=str, default='repos/sota_test', choices=['repos/python', 'repos/java', 'repos/sota_test', 'repos/repoeval_api', '/data/dengle/repofuse/crosscodeeval_rawdata'])
+    parser.add_argument('--encode_cuda', type=str, default='0')
+    parser.add_argument('--benchmark', type=str, default='sota_test', choices=['projbench', 'cceval', 'sota_test', 'repoeval_api'])
     parser.add_argument('--rg_file', type=str, help='需要用到第一次检索推理的结果')
     parser.add_argument('--rc_file', type=str, help='需要用到第二次检索的相似代码')
     parser.add_argument('--api_output', type=str)
-    parser.add_argument('--process', type=str, required=True, choices=['build_infile', 'build_database', 'infer_api', 'build_prompt'])
+    parser.add_argument('--process', type=str, default='build_database',choices=['build_infile', 'build_database', 'infer_api', 'build_prompt'])
     parser.add_argument('--infile_len', type=int, default=2048)
     parser.add_argument('--infile_input', type=str)
     parser.add_argument('--infile_output', type=str)
@@ -112,18 +112,157 @@ def main():
     repos: /data1/dengle/crosscodeeval_rawdata/
     '''
     if args.process == 'build_infile':
-        process_infile(args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)
+        process_infile(args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)#应该是第二步构建草稿
     elif args.process == 'build_database':
         # build api database
-        build_function_database(args)
+        build_function_database(args)#第一步，已经生成pkl
     elif args.process == 'infer_api':
         # search api info
-        build_func_prompt(args)
+        build_func_prompt(args)#应该是第三步检索相关api信息
         # Utils.dump_jsonl(res_examples, args.api_output)
     elif args.process == 'build_prompt':
-        combine_rc_and_api(args)
+        combine_rc_and_api(args)#应该是最后一步，把相关api信息和代码草稿一起移送llm推理
     
+def main2():
+    parser = argparse.ArgumentParser()
+    # 添加参数 
+    parser.add_argument('--summary_cuda', type=int, default=-1)
+    parser.add_argument('--lang', type=str, default='python', choices=['python', 'java'])
+    parser.add_argument('--repo_dir', type=str, default='repos/sota_test', choices=['repos/python', 'repos/java', 'repos/sota_test', 'repos/repoeval_api', '/data/dengle/repofuse/crosscodeeval_rawdata'])
+    parser.add_argument('--encode_cuda', type=str, default='0')
+    parser.add_argument('--benchmark', type=str, default='sota_test', choices=['projbench', 'cceval', 'sota_test', 'repoeval_api'])
+    parser.add_argument('--rg_file', type=str, help='需要用到第一次检索推理的结果')
+    parser.add_argument('--rc_file', type=str, help='需要用到第二次检索的相似代码')
+    parser.add_argument('--api_output', type=str)
+    parser.add_argument('--process', type=str, default='build_infile',choices=['build_infile', 'build_database', 'infer_api', 'build_prompt'])
+    parser.add_argument('--infile_len', type=int, default=2048)
+    parser.add_argument('--infile_input', type=str,default='datasets/projbench/pybenchmark_own.jsonl')
+    parser.add_argument('--infile_output', type=str,default='datasets/projbench/pybenchmark_2k.jsonl')
+    parser.add_argument('--k', type=int, default=4, help='推理的api数量')
+    parser.add_argument('--fsr', type=int, default=1, choices=[0, 1])
+    parser.add_argument('--uer', type=int, default=1, choices=[0, 1])
+    parser.add_argument('--prompt_output', type=str)
+    # 解析参数
+    args = parser.parse_args()
+    # 设置repos
+    if args.benchmark == 'cceval':
+        repos = json.loads(open('cceval/data.json', 'r', encoding='utf-8').read())[args.lang]
+    else:
+        entries = os.listdir(args.repo_dir)
+        repos = [entry for entry in entries if os.path.isdir(os.path.join(args.repo_dir, entry))]
+    setattr(args, 'repos', repos)
+    print(args)
+    
+    '''cceval
+    data: /data1/dengle/python/cc_line_completion.jsonl
+    repos: /data1/dengle/crosscodeeval_rawdata/
+    '''  
+    if args.process == 'build_infile':
+        process_infile(args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)#当前 应该是第二步构建APIbase，已经生成
+    elif args.process == 'build_database':
+        # build api database
+        build_function_database(args)#第一步，已经生成pkl
+    elif args.process == 'infer_api':
+        # search api info
+        build_func_prompt(args)#应该是第三步检索相关api信息
+        # Utils.dump_jsonl(res_examples, args.api_output)
+    elif args.process == 'build_prompt':
+        combine_rc_and_api(args)#应该是最后一步，把相关api信息和代码草稿一起移送llm推理
+    
+def main3():
+    parser = argparse.ArgumentParser()
+    # 添加参数 
+    parser.add_argument('--summary_cuda', type=int, default=-1)
+    parser.add_argument('--lang', type=str, default='python', choices=['python', 'java'])
+    parser.add_argument('--repo_dir', type=str, default='repos/sota_test', choices=['repos/python', 'repos/java', 'repos/sota_test', 'repos/repoeval_api', '/data/dengle/repofuse/crosscodeeval_rawdata'])
+    parser.add_argument('--encode_cuda', type=str, default='0')
+    parser.add_argument('--benchmark', type=str, default='sota_test', choices=['projbench', 'cceval', 'sota_test', 'repoeval_api'])
+    parser.add_argument('--rg_file', type=str, default='predictions/sota_test/pybenchmark_2k.jsonl',help='需要用到第一次检索的相似代码')
+    parser.add_argument('--rc_file', type=str, help='需要用到第二次检索的相似代码')
+    parser.add_argument('--api_output', type=str)
+    parser.add_argument('--process', type=str, default='infer_api',choices=['build_infile', 'build_database', 'infer_api', 'build_prompt'])
+    parser.add_argument('--infile_len', type=int, default=2048)
+    parser.add_argument('--infile_input', type=str,default='datasets/projbench/pybenchmark_own.jsonl')
+    parser.add_argument('--infile_output', type=str,default='datasets/projbench/pybenchmark_2k.jsonl')
+    parser.add_argument('--k', type=int, default=4, help='推理的api数量')
+    parser.add_argument('--fsr', type=int, default=1, choices=[0, 1])
+    parser.add_argument('--uer', type=int, default=1, choices=[0, 1])
+    parser.add_argument('--prompt_output', type=str)
+    # 解析参数
+    args = parser.parse_args()
+    # 设置repos
+    if args.benchmark == 'cceval':
+        repos = json.loads(open('cceval/data.json', 'r', encoding='utf-8').read())[args.lang]
+    else:
+        entries = os.listdir(args.repo_dir)
+        repos = [entry for entry in entries if os.path.isdir(os.path.join(args.repo_dir, entry))]
+    setattr(args, 'repos', repos)
+    print(args)
+    
+    '''cceval
+    data: /data1/dengle/python/cc_line_completion.jsonl
+    repos: /data1/dengle/crosscodeeval_rawdata/
+    '''  
+    if args.process == 'build_infile':
+        process_infile(args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)#应该是第二步构建草稿，已经生成草稿prompt
+    elif args.process == 'build_database':
+        # build api database
+        build_function_database(args)#第一步，已经生成pkl
+    elif args.process == 'infer_api':
+        # search api info
+        build_func_prompt(args)#应该是第三步检索相关api信息   ！当前！ 在这之前先得执行一下generate_api，把predictions/sota_test/pybenchmark_2k.jsonl传入才行
+        # Utils.dump_jsonl(res_examples, args.api_output)
+    elif args.process == 'build_prompt':
+        combine_rc_and_api(args)#应该是第四步，把相关api信息和代码草稿一起移送llm推理
+        
+    #在这之后 第五步最终要执行generate_api.py这个是最终成果了，我暂时伪造了prompt文件夹下的文件直接跳过第四步直接使用generate_api可以运行
 
-
+def main4():
+    parser = argparse.ArgumentParser()
+    # 添加参数 
+    parser.add_argument('--summary_cuda', type=int, default=-1)
+    parser.add_argument('--lang', type=str, default='python', choices=['python', 'java'])
+    parser.add_argument('--repo_dir', type=str, default='repos/sota_test', choices=['repos/python', 'repos/java', 'repos/sota_test', 'repos/repoeval_api', '/data/dengle/repofuse/crosscodeeval_rawdata'])
+    parser.add_argument('--encode_cuda', type=str, default='0')
+    parser.add_argument('--benchmark', type=str, default='sota_test', choices=['projbench', 'cceval', 'sota_test', 'repoeval_api'])
+    parser.add_argument('--rg_file', type=str, default='datasets/projbench/pybenchmark_2k.jsonl',help='需要用到第一次检索的相似代码')
+    parser.add_argument('--rc_file', type=str, help='需要用到第二次检索的相似代码')
+    parser.add_argument('--api_output', type=str)
+    parser.add_argument('--process', type=str, default='infer_api',choices=['build_infile', 'build_database', 'infer_api', 'build_prompt'])
+    parser.add_argument('--infile_len', type=int, default=2048)
+    parser.add_argument('--infile_input', type=str,default='datasets/projbench/pybenchmark_own.jsonl')
+    parser.add_argument('--infile_output', type=str,default='datasets/projbench/pybenchmark_2k.jsonl')
+    parser.add_argument('--k', type=int, default=4, help='推理的api数量')
+    parser.add_argument('--fsr', type=int, default=1, choices=[0, 1])
+    parser.add_argument('--uer', type=int, default=1, choices=[0, 1])
+    parser.add_argument('--prompt_output', type=str)
+    # 解析参数
+    args = parser.parse_args()
+    # 设置repos
+    if args.benchmark == 'cceval':
+        repos = json.loads(open('cceval/data.json', 'r', encoding='utf-8').read())[args.lang]
+    else:
+        entries = os.listdir(args.repo_dir)
+        repos = [entry for entry in entries if os.path.isdir(os.path.join(args.repo_dir, entry))]
+    setattr(args, 'repos', repos)
+    print(args)
+    
+    '''cceval
+    data: /data1/dengle/python/cc_line_completion.jsonl
+    repos: /data1/dengle/crosscodeeval_rawdata/
+    '''  
+    if args.process == 'build_infile':
+        process_infile(args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)#应该是第二步构建草稿，已经生成草稿prompt
+    elif args.process == 'build_database':
+        # build api database
+        build_function_database(args)#第一步，已经生成pkl
+    elif args.process == 'infer_api':
+        # search api info
+        build_func_prompt(args)#应该是第三步检索相关api信息    生成了prompt
+        # Utils.dump_jsonl(res_examples, args.api_output)
+    elif args.process == 'build_prompt':
+        combine_rc_and_api(args)#应该是第四步，把相关api信息和代码草稿一起移送llm推理
+        
+    #在这之后 第五步最终要在执行一次generate_api.py这个是最终成果了，我暂时伪造了prompt文件夹下的文件直接跳过第四步直接使用generate_api可以运行
 if __name__ == '__main__':
-    main()
+    main3()
