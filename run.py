@@ -237,7 +237,7 @@ def main4():
     parser.add_argument('--k', type=int, default=4, help='推理的api数量')
     parser.add_argument('--fsr', type=int, default=1, choices=[0, 1])
     parser.add_argument('--uer', type=int, default=1, choices=[0, 1])
-    parser.add_argument('--prompt_output',default='prompts/sota_test/pybenchmark4k.jsonl',type=str)
+    parser.add_argument('--prompt_output',default='prompts/sota_test/pybenchmark_4k.jsonl',type=str)
     # 解析参数
     args = parser.parse_args()
     # 设置repos

@@ -174,7 +174,7 @@ if __name__ == '__main__':
 
     m_type = 'sota'
     benchmark = 'sota_test'
-    file_names = ['pybenchmark_2k.jsonl']
+    file_names = ['pybenchmark_4k.jsonl']
     for file_name in file_names:
         in_path = f'prompts/{benchmark}/{file_name}'
         out_path = f'predictions/{benchmark}/{file_name}'
