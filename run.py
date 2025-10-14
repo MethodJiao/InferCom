@@ -210,10 +210,12 @@ def main3():
         build_function_database(args)#第一步，已经生成pkl
     elif args.process == 'infer_api':
         # search api info
-        build_func_prompt(args)#  ！当前完成！ 第三步检索相关api信息  在这之前先得执行一下generate_api，把predictions/sota_test/pybenchmark_2k.jsonl传入才行 输出产物cache/func_retrieval/sota~~.pkl
-        # Utils.dump_jsonl(res_examples, args.api_output)
+        res_examples = build_func_prompt(args)#  ！当前完成！ 第三步检索相关api信息构造提示词（本质是余弦相似度）  在这之前先得执行一下generate_api生成推理把predictions/sota_test/pybenchmark_2k.jsonl传入才行 
+        #当前函数输出产物cache/func_retrieval/sota_test_python.pkl  （函数检索上下文）
+
+        Utils.dump_jsonl(res_examples, 'apioutput/apioutput_pybenchmark_2k.jsonl') #观察调试用，可不输出
     elif args.process == 'build_prompt':
-        combine_rc_and_api(args)#第四步，把相关api信息和代码草稿一起移送llm推理
+        combine_rc_and_api(args)#第四步，把检索api信息提示词和代码草稿一起移送llm推理
         
     #在这之后 第五步最终要执行generate_api.py这个是最终成果了，我暂时伪造了prompt文件夹下的文件直接跳过第四步直接使用generate_api可以运行
 
@@ -261,7 +263,7 @@ def main4():
         build_func_prompt(args)#是第三步检索相关api信息    生成了prompt,这个环节处理了联想代码相似度
         # Utils.dump_jsonl(res_examples, args.api_output)
     elif args.process == 'build_prompt':
-        combine_rc_and_api(args)#是第四步，把相关api信息和代码草稿推理进一步完善prompt（缺失）
+        combine_rc_and_api(args)# 当前！ 是第四步，把相关api信息和代码草稿推理进一步完善prompt（缺失）
         
     #在这之后 第五步最终要在执行一次generate_api.py 进行LLM输出最终成果了，目前暂时伪造了prompt文件夹下的文件直接跳过第四步直接使用generate_api可以运行
 if __name__ == '__main__':
