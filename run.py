@@ -112,16 +112,16 @@ def main1():
     repos: /data1/dengle/crosscodeeval_rawdata/
     '''
     if args.process == 'build_infile':
-        process_infile(args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)#应该是第二步构建草稿
+        process_infile(args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)
     elif args.process == 'build_database':
         # build api database
-        build_function_database(args)#第一步，已经生成pkl
+        build_function_database(args)#当前 第一步，已经生成pkl
     elif args.process == 'infer_api':
         # search api info
-        build_func_prompt(args)#应该是第三步检索相关api信息
+        build_func_prompt(args)
         # Utils.dump_jsonl(res_examples, args.api_output)
     elif args.process == 'build_prompt':
-        combine_rc_and_api(args)#应该是最后一步，把相关api信息和代码草稿一起移送llm推理
+        combine_rc_and_api(args)
     
 def main2():
     parser = argparse.ArgumentParser()
@@ -158,16 +158,16 @@ def main2():
     repos: /data1/dengle/crosscodeeval_rawdata/
     '''  
     if args.process == 'build_infile':
-        process_infile(args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)#当前 应该是第二步构建APIbase，已经生成
+        process_infile(args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)#当前 第二步构建APIbase，已经生成
     elif args.process == 'build_database':
         # build api database
-        build_function_database(args)#第一步，已经生成pkl
+        build_function_database(args)
     elif args.process == 'infer_api':
         # search api info
-        build_func_prompt(args)#应该是第三步检索相关api信息
+        build_func_prompt(args)
         # Utils.dump_jsonl(res_examples, args.api_output)
     elif args.process == 'build_prompt':
-        combine_rc_and_api(args)#应该是最后一步，把相关api信息和代码草稿一起移送llm推理
+        combine_rc_and_api(args)
     
 def main3():
     parser = argparse.ArgumentParser()
@@ -210,10 +210,10 @@ def main3():
         build_function_database(args)#第一步，已经生成pkl
     elif args.process == 'infer_api':
         # search api info
-        build_func_prompt(args)#  ！当前完成！ 应该是第三步检索相关api信息  在这之前先得执行一下generate_api，把predictions/sota_test/pybenchmark_2k.jsonl传入才行 输出产物cache/func_retrieval/sota~~.pkl
+        build_func_prompt(args)#  ！当前完成！ 第三步检索相关api信息  在这之前先得执行一下generate_api，把predictions/sota_test/pybenchmark_2k.jsonl传入才行 输出产物cache/func_retrieval/sota~~.pkl
         # Utils.dump_jsonl(res_examples, args.api_output)
     elif args.process == 'build_prompt':
-        combine_rc_and_api(args)#应该是第四步，把相关api信息和代码草稿一起移送llm推理
+        combine_rc_and_api(args)#第四步，把相关api信息和代码草稿一起移送llm推理
         
     #在这之后 第五步最终要执行generate_api.py这个是最终成果了，我暂时伪造了prompt文件夹下的文件直接跳过第四步直接使用generate_api可以运行
 
