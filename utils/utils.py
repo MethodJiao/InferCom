@@ -28,8 +28,23 @@ class RCPromptBuilder:
         content = retrieved_context
         metadata = content['metadata']
         # put the file path in the comment
-        assert metadata[0]['fpath_tuple'][0] == metadata[0]['repo']
-        f_paths = ['/'.join(x['fpath_tuple'][1:]) for x in metadata]
+        # assert metadata['fpath_tuple'][0] == metadata['repo']
+        # f_paths = ['/'.join(x['fpath_tuple'][1:]) for x in metadata]
+        f_paths = []
+
+        fpath_tuple = metadata['fpath_tuple']
+        # 从元组中提取路径部分（跳过第一个元素）
+        # 例如，如果fpath_tuple是('repo_name', 'src', 'utils', 'helper.py')
+        # 那么path_parts就是['src', 'utils', 'helper.py']
+        path_parts = fpath_tuple[1:]
+        
+        # 使用斜杠连接路径部分，形成完整的文件路径
+        # 例如，上面的path_parts会被连接成'src/utils/helper.py'
+        full_path = '/'.join(path_parts)
+        
+        # 将处理后的路径添加到结果列表中
+        f_paths.append(full_path)
+
         f_paths_str = '\n'.join([f'# {f_path}' for f_path in f_paths])
         f_path_comment = f'# the below code fragment can be found in:'
         # put code lines in the comment

@@ -1,9 +1,1 @@
-{
-  "metadata": {
-    "top_k_context": [
-      "# 在此添加相似代码片段1",
-      "# 在此添加相似代码片段2" 
-    ],
-    "task_id": "your_task_id_here"
-  }
-}
+{"metadata":{"top_k_context":[{"context":"\"a\": pz.chk.ArraySpec(shape=(1, 2, 3))this is similar code1","metadata":{"fpath_tuple":["penzai-main","tests","shapecheck_test.py"]}},{"context":"\"a\": this is similar code2","metadata":{"fpath_tuple":["penzai-main","tests","shapecheck_test.py"]}}],"task_id":"penzai-main/0"}}

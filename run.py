@@ -55,7 +55,7 @@ def combine_rc_and_api(args):
     for i in api_examples:
         task_id = i['metadata']['task_id']
         rc_example = rc_record[task_id]
-        o_prompt = i['old_prompt']
+        o_prompt = i['prompt'] #['old_prompt']!!!!!!!!!
         api_prompt = ''
         # if args.uer:
         uer_api_prompt = i['func_detail']['doc'] + '\n'
@@ -204,7 +204,7 @@ def main3():
     repos: /data1/dengle/crosscodeeval_rawdata/
     '''  
     if args.process == 'build_infile':
-        process_infile(args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)#应该是第二步构建草稿，已经生成草稿prompt
+        process_infile(args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)#应该是第二步构建草稿，已经生成草稿prompt own是待补全的代码
     elif args.process == 'build_database':
         # build api database
         build_function_database(args)#第一步，已经生成pkl
@@ -228,16 +228,16 @@ def main4():
     parser.add_argument('--encode_cuda', type=str, default='0')
     parser.add_argument('--benchmark', type=str, default='sota_test', choices=['projbench', 'cceval', 'sota_test', 'repoeval_api'])
     parser.add_argument('--rg_file', type=str, default='datasets/projbench/pybenchmark_2k.jsonl',help='需要用到第一次检索的相似代码')
-    parser.add_argument('--rc_file', type=str, help='需要用到第二次检索的相似代码')
+    parser.add_argument('--rc_file', type=str, default='datasets/projbench/rc_template.jsonl',help='需要用到第二次检索的相似代码')
     parser.add_argument('--api_output', type=str)
-    parser.add_argument('--process', type=str, default='infer_api',choices=['build_infile', 'build_database', 'infer_api', 'build_prompt'])
+    parser.add_argument('--process', type=str, default='build_prompt',choices=['build_infile', 'build_database', 'infer_api', 'build_prompt'])
     parser.add_argument('--infile_len', type=int, default=2048)
     parser.add_argument('--infile_input', type=str,default='datasets/projbench/pybenchmark_own.jsonl')
     parser.add_argument('--infile_output', type=str,default='datasets/projbench/pybenchmark_2k.jsonl')
     parser.add_argument('--k', type=int, default=4, help='推理的api数量')
     parser.add_argument('--fsr', type=int, default=1, choices=[0, 1])
     parser.add_argument('--uer', type=int, default=1, choices=[0, 1])
-    parser.add_argument('--prompt_output', type=str)
+    parser.add_argument('--prompt_output',default='prompts/sota_test/pybenchmark4k.jsonl',type=str)
     # 解析参数
     args = parser.parse_args()
     # 设置repos
@@ -260,11 +260,12 @@ def main4():
         build_function_database(args)#第一步，已经生成pkl
     elif args.process == 'infer_api':
         # search api info
-        build_func_prompt(args)#是第三步检索相关api信息    生成了prompt,这个环节处理了联想代码相似度
+        build_func_prompt(args)#第三步检索相关api信息构造提示词（本质是余弦相似度）  在这之前先得执行一下generate_api生成推理把predictions/sota_test/pybenchmark_2k.jsonl传入才行 
+        #当前函数输出产物cache/func_retrieval/sota_test_python.pkl  （函数检索上下文）
         # Utils.dump_jsonl(res_examples, args.api_output)
     elif args.process == 'build_prompt':
-        combine_rc_and_api(args)# 当前！ 是第四步，把相关api信息和代码草稿推理进一步完善prompt（缺失）
+        combine_rc_and_api(args)# 当前！ 是第四步，把相关api信息提示词和代码草稿推理进一步完善prompt（缺失）
         
     #在这之后 第五步最终要在执行一次generate_api.py 进行LLM输出最终成果了，目前暂时伪造了prompt文件夹下的文件直接跳过第四步直接使用generate_api可以运行
 if __name__ == '__main__':
-    main3()
+    main4()
