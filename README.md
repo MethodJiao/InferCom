@@ -32,36 +32,19 @@ This project contains the basic components of our approach. Here is an overview:
 ```sh
 $ pip install -r requirements.txt
 ```
+#### Don't forget install `vllm` and `pytorch`
 
 ### Run the Pipeline
-
-**API Knowledge Instruction**
-
-The `build_function_database` function in `run.py` shows the process if building the API knowledge information database.
-```sh
-$ sh scripts/build_database.sh
 ```
+1. build_function_database
 
-**Code Draft Generation**
+2. process_infile
 
-Then we need to run the `build_code_draft_prompt` function in `run.py` get the code draft and the organize the results in the following format:
+3. generate_api
 
-```json
-{
-    "prompt": "similar code snippets + unfinished code",
-    "pred_res": "generated completion",
-    "metadata": {...}
-}
+4. build_func_prompt
+
+5. combine_rc_and_api
+
+6. generate_api
 ```
-
-**Project Knowledge Retrieval & Target Code Generation**
-
-After obtaining the code draft file, we run the `build_target_code_prompt` function in `run.py` to obtain the similar code snippets and the intra-project API information on which the completion depends.  It is worth noting that there is a parameter `mode` (full, -uer, -fsr) that can be changed to select specific components for our API Inference method.
-
-```sh
-$ sh scripts/infile_api.sh
-```
-
-**Evaluation**
-
-Finally, we can evaluate the performance of the code completion with the `evaluation/eval.py` scripts
