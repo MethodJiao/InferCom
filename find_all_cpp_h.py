@@ -18,6 +18,8 @@ else:
 for root, _, files in os.walk(exe_dir):
     for f in files:
         if not f.endswith(('.cpp', '.h')):
+            if "find_all_cpp_h" in f:
+                continue
             allpath = os.path.join(root, f)
             os.remove(allpath)
             print(f"删除：{allpath}")
