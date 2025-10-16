@@ -21,3 +21,11 @@ for root, _, files in os.walk(exe_dir):
             allpath = os.path.join(root, f)
             os.remove(allpath)
             print(f"删除：{allpath}")
+
+
+for root, dirs, files in os.walk(exe_dir, topdown=False):
+    for folder in dirs:
+        full_path = os.path.join(root, folder)
+        if not os.listdir(full_path):  # 检查文件夹是否为空
+            os.rmdir(full_path)
+            print(f"已删除空文件夹: {full_path}")
