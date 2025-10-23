@@ -151,5 +151,66 @@ class FuncPromptBuilder:
             if result:
                 new_examples.append(result)
         return new_examples
+    
+    #newFuction
+    def remove_annotation(self, inputcode):
+        to_deals = inputcode.split('\n')
+        new_inputcode = []
+        for to_deal in to_deals:
+            if(to_deal=='' or to_deal.startswith('#') or to_deal.startswith('"')): continue
+            new_inputcode.append(to_deal)
+        inputcode = '\n'.join(new_inputcode)
+        return inputcode
+    
+    #newFuction
+    def get_similar_code(self, repo, inputcode, task_id,  k=4,):
+        new_examples = []
+        #inputcode=self.remove_annotation(inputcode)  去掉注释以启用将输入的注释删除
+        new_examples = self.similar_code_process(repo, inputcode, task_id, k=k)
+        return new_examples
+    
+    #newFuction
+    def similar_code_process(self, repo, inputcode, task_id, k=3):
+        repo = repo
+        if repo not in self.func_database_dict:
+            return None
+        in_embedding = self.encoder.encode_text(inputcode)
+        database = self.func_database_dict[repo]
+        matrix = database['uer_matrix']
+        idx_mapping = database['idx_mapping']
+        scores = Similarity.cossim_tensors(in_embedding, matrix)
+
+        idxs = heapq.nlargest(k*4, range(len(scores)), scores.__getitem__)
+        real_idxs = list(dict.fromkeys([idx_mapping[i] for i in idxs]))
+        res = [database['data'][i] for i in real_idxs]
+        # idx = scores.index(max(scores))
+        res = res[:k]
+        res = self.build_similar_code(res)
+        res = self.jsonl_handler(res, task_id)
+        return res
+
+    #newFuction    
+    def build_similar_code(self, func_list):
+        new_res = []
+        for func in func_list:
+            fpath = func['fpath']
+            context = func['metadata']
+            context = context['func_body']
+            res = {'fpath': fpath, 'context': context}
+            new_res.append(res)
+        return new_res
+    
+    #newFuction
+    def jsonl_handler(self, texts, task_id):
+        top_k_context = []
+        for text in texts:
+            metadata = {'fpath_tuple': text['fpath']}
+            temp = {'context': text['context'], 'metadata': metadata }
+            top_k_context.append(temp)
+        new_res = {'top_k_context': top_k_context, 'task_id': task_id}
+        new_res = {'metadata': new_res}
+        res1 = []
+        res1.append(new_res)
+        return res1
 
 

@@ -168,6 +168,17 @@ def generate_codes(in_path, out_path, logger: logging.Logger, m_type='n3_ds'):
         with open(out_path, mode='a', encoding='utf-8') as f:
             f.write(json.dumps(example_json) + '\n')
     
+#newFuction
+def generate_code(self, filename):
+    m_type = 'sota'
+    benchmark = 'sota_test'
+    file_names = filename
+    for file_name in file_names:
+        in_path = f'prompts/{benchmark}/{file_name}'
+        out_path = f'predictions/{benchmark}/{file_name}'
+
+        logger = get_logger(log_file=f'logs/{file_name}.log')
+        generate_codes(in_path, out_path, logger, m_type=m_type)
 
 
 if __name__ == '__main__':
