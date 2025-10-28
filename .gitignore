@@ -151,3 +151,5 @@ dmypy.json
 .vscode/
 *.swp
 *.swo
+*.jsonl
+*.pkl
