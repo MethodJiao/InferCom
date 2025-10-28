@@ -169,10 +169,11 @@ def generate_codes(in_path, out_path, logger: logging.Logger, m_type='n3_ds'):
             f.write(json.dumps(example_json) + '\n')
     
 #newFuction
-def generate_code(self, filename):
+@staticmethod
+def generate_code(filename):
     m_type = 'sota'
     benchmark = 'sota_test'
-    file_names = filename
+    file_names = [filename]
     for file_name in file_names:
         in_path = f'prompts/{benchmark}/{file_name}'
         out_path = f'predictions/{benchmark}/{file_name}'

@@ -9,7 +9,8 @@ from utils.utils import RCPromptBuilder, Utils, UnixCoder, CodexTokenizer
 from build_infile import build_infile
 from build_py_func_base import FuncBaseBuilder as PyFuncBaseBuilder
 from build_j_func_base import FuncBaseBuilder as JFuncBaseBuilder
-from generate_api import generate_api
+from read_undo_code import ReadUndoCode
+import generate_api
 
 def process_infile(in_file, out_file, repo_dir, context_len=1000):
     build_infile(in_file, out_file, infile_len=context_len, repo_dir=repo_dir)
@@ -48,7 +49,7 @@ def search_similar_code(args):
     task_id =examples[0]['metadata']['task_id']
     input_code = examples[0]['prompt']
     func_builder = FuncPromptBuilder(args.repos, summary_cuda=args.summary_cuda, benchmark=args.benchmark, lang=args.lang, encode_cuda=args.encode_cuda)
-    repo = task_id.split('/')[0]
+    repo = task_id.split('/')[-2]
     new_examples = func_builder.get_similar_code(repo, input_code, task_id, k=args.k)
     Utils.dump_jsonl(new_examples, 'test_res_rc.jsonl')
 
@@ -146,7 +147,7 @@ def main_similar_code():
     parser.add_argument('--api_output', type=str)
     parser.add_argument('--process', type=str, default='build_infile',choices=['build_infile', 'build_database', 'infer_api', 'build_prompt'])
     parser.add_argument('--infile_len', type=int, default=2048)
-    parser.add_argument('--infile_input', type=str,default='datasets/projbench/pybenchmark_own.jsonl')
+    parser.add_argument('--infile_input', type=str,default='datasets/projbench/pybenchmark_test.jsonl')
     parser.add_argument('--infile_output', type=str,default='datasets/projbench/pybenchmark_similar_code.jsonl')
     parser.add_argument('--k', type=int, default=4, help='推理的api数量')
     parser.add_argument('--fsr', type=int, default=1, choices=[0, 1])
@@ -178,7 +179,7 @@ def main2():
     parser.add_argument('--api_output', type=str)
     parser.add_argument('--process', type=str, default='build_infile',choices=['build_infile', 'build_database', 'infer_api', 'build_prompt'])
     parser.add_argument('--infile_len', type=int, default=2048)
-    parser.add_argument('--infile_input', type=str,default='datasets/projbench/pybenchmark_own.jsonl')
+    parser.add_argument('--infile_input', type=str,default='datasets/projbench/pybenchmark_test.jsonl')
     parser.add_argument('--infile_output', type=str,default='datasets/projbench/pybenchmark_2k.jsonl')
     parser.add_argument('--k', type=int, default=4, help='推理的api数量')
     parser.add_argument('--fsr', type=int, default=1, choices=[0, 1])
@@ -310,24 +311,112 @@ def main4():
         
     #在这之后 第五步最终要在执行一次generate_api.py 进行LLM输出最终成果了，目前暂时伪造了prompt文件夹下的文件直接跳过第四步直接使用generate_api可以运行
 
+
+#第一步只需要进行代码仓库的构建，只需要读repo文件夹下的文件
 def main_build_base():
-    main1()
+    #main1()
+    parser = argparse.ArgumentParser()
+    # 添加参数 
+    parser.add_argument('--summary_cuda', type=int, default=-1)
+    parser.add_argument('--lang', type=str, default='python', choices=['python', 'java'])
+    parser.add_argument('--repo_dir', type=str, default='repos/sota_test', choices=['repos/python', 'repos/java', 'repos/sota_test', 'repos/repoeval_api', '/data/dengle/repofuse/crosscodeeval_rawdata'])
+    parser.add_argument('--encode_cuda', type=str, default='0')
+    parser.add_argument('--benchmark', type=str, default='sota_test', choices=['projbench', 'cceval', 'sota_test', 'repoeval_api'])
+    parser.add_argument('--rg_file', type=str, default='datasets/projbench/pybenchmark_2k.jsonl',help='需要用到第一次检索的相似代码')
+    parser.add_argument('--rc_file', type=str, default='test_res_rc.jsonl',help='需要用到第二次检索的相似代码') # datasets/projbench/rc_template.jsonl
+    parser.add_argument('--api_output', default="apioutput/temp_out.jsonl",type=str)
+    parser.add_argument('--process', type=str, default='build_database',choices=['build_infile', 'build_database', 'infer_api', 'build_prompt'])
+    parser.add_argument('--infile_len', type=int, default=2048)
+    parser.add_argument('--infile_input', type=str,default='datasets/projbench/pybenchmark_own.jsonl')
+    parser.add_argument('--infile_output', type=str,default='datasets/projbench/pybenchmark_2k.jsonl')
+    parser.add_argument('--k', type=int, default=4, help='推理的api数量')
+    parser.add_argument('--fsr', type=int, default=1, choices=[0, 1])
+    parser.add_argument('--uer', type=int, default=1, choices=[0, 1])
+    parser.add_argument('--prompt_output',default='prompts/sota_test/pybenchmark_4k.jsonl',type=str)
+    # 解析参数
+    args = parser.parse_args()
+    # 设置repos
+    if args.benchmark == 'cceval':
+        repos = json.loads(open('cceval/data.json', 'r', encoding='utf-8').read())[args.lang]
+    else:
+        entries = os.listdir(args.repo_dir)
+        repos = [entry for entry in entries if os.path.isdir(os.path.join(args.repo_dir, entry))]
+    setattr(args, 'repos', repos)
+    print(args)
+
+    build_function_database(args)
+
+
 
 
 def main_generate_code():
-    main2()
-    main_generate_code()
+    #main2()
+    #main_generate_code()
+    #generate_api.generate_code('pybenchmark_2k.jsonl')
+    #main3()
+    #main4()
+    #generate_api.generate_code('pybenchmark_4k.jsonl')
+    parser = argparse.ArgumentParser()
+    # 添加参数 
+    parser.add_argument('--summary_cuda', type=int, default=-1)
+    parser.add_argument('--lang', type=str, default='python', choices=['python', 'java'])
+    parser.add_argument('--repo_dir', type=str, default='repos/sota_test', choices=['repos/python', 'repos/java', 'repos/sota_test', 'repos/repoeval_api', '/data/dengle/repofuse/crosscodeeval_rawdata'])
+    parser.add_argument('--encode_cuda', type=str, default='0')
+    parser.add_argument('--benchmark', type=str, default='sota_test', choices=['projbench', 'cceval', 'sota_test', 'repoeval_api'])
+    parser.add_argument('--rg_file', type=str, default='predictions/sota_test/pybenchmark_2k.jsonl',help='需要用到第一次检索的相似代码') # datasets/projbench/pybenchmark_2k.jsonl
+    parser.add_argument('--rc_file', type=str, default='test_res_rc.jsonl',help='需要用到第二次检索的相似代码') # datasets/projbench/rc_template.jsonl
+    parser.add_argument('--api_output', default="apioutput/temp_out.jsonl",type=str)
+    parser.add_argument('--process', type=str, default='build_infile',choices=['build_infile', 'build_database', 'infer_api', 'build_prompt'])
+    parser.add_argument('--infile_len', type=int, default=2048)
+    parser.add_argument('--infile_input', type=str,default='datasets/projbench/pybenchmark_test.jsonl')
+    parser.add_argument('--infile_output', type=str,default='datasets/projbench/pybenchmark_2k.jsonl')
+    parser.add_argument('--k', type=int, default=4, help='推理的api数量')
+    parser.add_argument('--fsr', type=int, default=1, choices=[0, 1])
+    parser.add_argument('--uer', type=int, default=1, choices=[0, 1])
+    parser.add_argument('--prompt_output',default='prompts/sota_test/pybenchmark_4k.jsonl',type=str)
+    # 解析参数
+    args = parser.parse_args()
+    # 设置repos
+    if args.benchmark == 'cceval':
+        repos = json.loads(open('cceval/data.json', 'r', encoding='utf-8').read())[args.lang]
+    else:
+        entries = os.listdir(args.repo_dir)
+        repos = [entry for entry in entries if os.path.isdir(os.path.join(args.repo_dir, entry))]
+    setattr(args, 'repos', repos)
+    print(args)
+
+    #设置输入的文件
+    #由于process_infile方法(main2)中需要读取repo下的文件，因此input_filepath必须在repo/sota_test之下
+    #read_undo_code负责将py文件读取为jsonl格式，其处理文件路径时，也假定了文件放在repo/sota_test之下
+    #目前输入的文件是一个纯粹的测试文件，编的
+    input_filepath = 'repos/sota_test/projectA/Pipe参数化.py'
+    output_jsonlpath = 'datasets/projbench/pybenchmark_test.jsonl'
+    ReadUndoCode.read_undo_code(input_filepath, output_jsonlpath)
+
+    #main2
+    process_infile(args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)
+    args.process = 'search_similar_code'
+    #进行完一个步骤之后，需要相应的改变args.process，方便后续调试
+
+
+    #main_similar_code
+    #生成的jsonl文件的位置为test_res_rc.jsonl，在search_similar_code方法中写死了
+    search_similar_code(args)
+    args.process = 'infer_api'
+
+    #生成初始的预测
     generate_api.generate_code('pybenchmark_2k.jsonl')
-    main3()
-    main4()
+    #main3
+    build_func_prompt(args)
+    args.process = 'build_prompt'
+
+    #构建最终提示词并最终生成预测结果
+    #main4
+    combine_rc_and_api(args)
     generate_api.generate_code('pybenchmark_4k.jsonl')
 
 
-
 if __name__ == '__main__':
-    main1()
-    main2()
-    main_similar_code()
-    main3()
-    main4()
-    generate_api.run()
+    main_build_base()
+    main_generate_code()
+    

@@ -115,7 +115,7 @@ class FuncPromptBuilder:
         return new_prompt
 
     def process_example(self, example, use_doc=True, use_summary=True, k=4):
-        repo = example['metadata']['task_id'].split('/')[0]
+        repo = example['metadata']['task_id'].split('/')[-2]
         if repo not in self.func_database_dict:
             return None
         ret_funcs = []
