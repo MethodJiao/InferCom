@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 
 from tqdm import tqdm
 
@@ -350,6 +351,20 @@ def main_build_base():
 
 
 def main_generate_code():
+    #删除prompts和predictions文件夹下的目录
+    predictions_path = 'predictions/sota_test'
+    prompts_path = 'prompts/sota_test'
+    shutil.rmtree(predictions_path)
+    shutil.rmtree(prompts_path)
+    if not os.path.exists(prompts_path):
+        os.makedirs(prompts_path)
+    if not os.path.exists(predictions_path):
+        os.makedirs(predictions_path)
+
+    #删除main3中所创建的pkl文件
+    file_path = 'cache/func_retrieval/sota_test_python.pkl'
+    os.remove(file_path)
+
     #main2()
     #main_generate_code()
     #generate_api.generate_code('pybenchmark_2k.jsonl')
