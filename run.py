@@ -354,6 +354,10 @@ def main_generate_code():
     #删除prompts和predictions文件夹下的目录
     predictions_path = 'predictions/sota_test'
     prompts_path = 'prompts/sota_test'
+    if not os.path.exists(prompts_path):
+        os.makedirs(prompts_path)
+    if not os.path.exists(predictions_path):
+        os.makedirs(predictions_path)
     shutil.rmtree(predictions_path)
     shutil.rmtree(prompts_path)
     if not os.path.exists(prompts_path):
