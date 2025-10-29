@@ -225,10 +225,12 @@ class FuncBaseBuilder:
                     func_list.append({'type': 'function', 'class_def': class_def, 'func_def': i, 'file_path': cpp_file, 'specifiers': current_specifiers})
 
                     # Check for constructor
-                    if class_def and extract_func_name(i) == class_dict[class_def]['class_def'].children[1].text.decode() and class_def in class_dict:
+                    # First ensure the class_def is present in class_dict before accessing it
+                    if class_def and class_def in class_dict and extract_func_name(i) == class_dict[class_def]['class_def'].children[1].text.decode():
                         class_dict[class_def]['constructor'] = i
                     elif class_def:
-                        class_dict[class_dict]['methods'].append(i)
+                        # register method under the class entry
+                        class_dict[class_def]['methods'].append(i)
 
                     traverse(i, class_def, None)
                 elif i.type == 'template_declaration':
