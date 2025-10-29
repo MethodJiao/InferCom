@@ -1,0 +1,39 @@
+Act as an expert C++ programmer. Given a function code or a fragment, summarize it with a short sentence.
+
+Here are two examples:
+
+code:
+int writeDelimitedTo(std::ostream &out, const Message &message, const Schema<Message> &schema, LinkedBuffer &buffer) {
+  if (buffer.start != buffer.offset) throw std::invalid_argument("Buffer previously used and had not been reset.");
+  ProtobufOutput output(buffer);
+  schema.writeTo(output, message);
+  int size = output.getSize();
+  ProtobufOutput::writeRawVarInt32Bytes(out, size);
+  int msgSize = LinkedBuffer::writeTo(out, buffer);
+  assert(size == msgSize);
+  return size;
+}
+
+summary:
+Serialize the message into the given std::ostream using ProtobufOutput and LinkedBuffer, write its size prefix, and return the message size
+
+code:
+void selectRow(int row, QTableView *table, QScrollArea *pane) {
+  if (!table || !pane) {
+    return;
+  }
+  if (!contains(row, table->model())) {
+    return;
+  }
+  moveAdjustable(row * table->rowHeight(), pane->verticalScrollBar());
+  table->selectRow(row);
+  table->viewport()->update();
+}
+
+summary:
+Select the specified row in the given QTableView and scroll the given QScrollArea to that row
+
+Please answer strictly in the examples format and do not add extra sentences!
+code:
+@{}@
+summary:

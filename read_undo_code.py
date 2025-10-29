@@ -5,8 +5,9 @@ from utils.utils import Utils
 class ReadUndoCode:
 
     @staticmethod
-    def read_undo_code(filepath, outpath, context_start_linen=0):
-        path = filepath.split('/')[2:]
+    def read_undo_code(repos, filepath, outpath, context_start_linen=0):
+        index = len(repos.split('/'))
+        path = filepath.split('/')[index:]
         task_id = filepath
         task_type = 's1'
         ground_truth = ''

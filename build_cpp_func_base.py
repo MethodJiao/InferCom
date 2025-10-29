@@ -30,9 +30,11 @@ def process_class(node):
 
 def process_params(params_node):
     param_list = []
+    if not params_node:
+        return '()'
     for child in params_node.children:
-        if child.type == 'parameter_declaration':
-            param_str = child.text.decode()
+        if child.type == 'parameter_declaration' or child.type.endswith('declaration'):
+            param_str = child.text.decode().strip()
             # Remove default values if any
             if '=' in param_str:
                 param_str = param_str.split('=')[0].strip()
@@ -65,6 +67,17 @@ def process_func(node):
         elif child.type == 'template_parameter_list':
             template_params = child.text.decode()
 
+    # 若参数未在一层找到，再在子孙中查找一次
+    if not params:
+        stack = [node]
+        while stack and not params:
+            n = stack.pop()
+            for c in getattr(n, 'named_children', []):
+                if c.type == 'parameter_list':
+                    params = process_params(c)
+                    break
+                stack.append(c)
+
     # Clean up return_type (remove trailing spaces)
     return_type = return_type.strip()
 
@@ -87,9 +100,14 @@ def extract_specifiers(node):
     return res
 
 def extract_func_name(node):
-    for child in node.named_children:
-        if child.type == 'identifier' or child.type == 'field_identifier':
-            return child.text.decode()
+    # 递归搜索常见名称节点，支持 qualified/scoped/destructor
+    id_types = {'identifier', 'field_identifier', 'qualified_identifier', 'scoped_identifier', 'destructor_name'}
+    stack = [node]
+    while stack:
+        n = stack.pop()
+        if n.type in id_types:
+            return n.text.decode()
+        stack.extend(list(getattr(n, 'named_children', [])))
     return None
 
 
@@ -202,6 +220,19 @@ class FuncBaseBuilder:
         except IsADirectoryError as _:
             print(f'isdir {cpp_file}')
             return func_list, class_dict
+        except Exception as e:
+            print(f'parse error {cpp_file}: {e}')
+            return func_list, class_dict
+
+        def get_class_name(class_node):
+            # 在 class_specifier 子孙中寻找 type_identifier 作为类名，稳健提取
+            nodes = [class_node]
+            while nodes:
+                n = nodes.pop()
+                if n.type == 'type_identifier':
+                    return n.text.decode()
+                nodes.extend(list(getattr(n, 'named_children', [])))
+            return ''
 
         def traverse(node, class_def, specifiers):
             """
@@ -226,11 +257,21 @@ class FuncBaseBuilder:
 
                     # Check for constructor
                     # First ensure the class_def is present in class_dict before accessing it
-                    if class_def and class_def in class_dict and extract_func_name(i) == class_dict[class_def]['class_def'].children[1].text.decode():
-                        class_dict[class_def]['constructor'] = i
-                    elif class_def:
+                    #if class_def and class_def in class_dict and extract_func_name(i) == class_dict[class_def]['class_def'].children[1].text.decode():
+                    #    class_dict[class_def]['constructor'] = i
+                    #elif class_def:
                         # register method under the class entry
-                        class_dict[class_def]['methods'].append(i)
+                    #    class_dict[class_def]['methods'].append(i)
+
+
+                    # Check for constructor：使用稳健的类名提取，而非依赖 children[1]
+                    func_name = extract_func_name(i)
+                    if class_def:
+                        class_name = get_class_name(class_def)
+                        if func_name and class_name and func_name == class_name:
+                            class_dict[class_def]['constructor'] = i
+                        else:
+                            class_dict[class_def]['methods'].append(i)
 
                     traverse(i, class_def, None)
                 elif i.type == 'template_declaration':

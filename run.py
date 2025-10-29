@@ -10,6 +10,7 @@ from utils.utils import RCPromptBuilder, Utils, UnixCoder, CodexTokenizer
 from build_infile import build_infile
 from build_py_func_base import FuncBaseBuilder as PyFuncBaseBuilder
 from build_j_func_base import FuncBaseBuilder as JFuncBaseBuilder
+from build_cpp_func_base import FuncBaseBuilder as CppFuncBaseBuilder
 from read_undo_code import ReadUndoCode
 import generate_api
 
@@ -24,6 +25,8 @@ def build_function_database(args):
         func_base_builder = PyFuncBaseBuilder(args.repos, args.repo_dir)
     elif args.lang == 'java':
         func_base_builder = JFuncBaseBuilder(args.repos, args.repo_dir)
+    elif args.lang == 'cpp':
+        func_base_builder = CppFuncBaseBuilder(args.repos, args.repo_dir)
     func_base_builder.build(benchmark=args.benchmark)
     summary_codes(args.repos, lang=args.lang, benchmark=args.benchmark, summary_cuda=args.summary_cuda)
     encode_texts(args.repos, benchmark=args.benchmark, encode_cuda=args.encode_cuda)
@@ -319,8 +322,8 @@ def main_build_base():
     parser = argparse.ArgumentParser()
     # 添加参数 
     parser.add_argument('--summary_cuda', type=int, default=-1)
-    parser.add_argument('--lang', type=str, default='python', choices=['python', 'java'])
-    parser.add_argument('--repo_dir', type=str, default='repos/sota_test', choices=['repos/python', 'repos/java', 'repos/sota_test', 'repos/repoeval_api', '/data/dengle/repofuse/crosscodeeval_rawdata'])
+    parser.add_argument('--lang', type=str, default='cpp', choices=['python', 'java', 'cpp'])
+    parser.add_argument('--repo_dir', type=str, default='repos/sota_test/C++Examples', choices=['repos/python', 'repos/java', 'repos/sota_test', 'repos/repoeval_api', '/data/dengle/repofuse/crosscodeeval_rawdata', 'repos/sota_test/C++Examples'])
     parser.add_argument('--encode_cuda', type=str, default='0')
     parser.add_argument('--benchmark', type=str, default='sota_test', choices=['projbench', 'cceval', 'sota_test', 'repoeval_api'])
     parser.add_argument('--rg_file', type=str, default='datasets/projbench/pybenchmark_2k.jsonl',help='需要用到第一次检索的相似代码')
@@ -366,9 +369,12 @@ def main_generate_code():
         os.makedirs(predictions_path)
 
     #删除main3中所创建的pkl文件
-    file_path = 'cache/func_retrieval/sota_test_python.pkl'
-    os.remove(file_path)
-
+    file_path = 'cache/func_retrieval'
+    if not os.path.exists(file_path):
+        os.makedirs(file_path)
+    shutil.rmtree(file_path)
+    if not os.path.exists(file_path):
+        os.makedirs(file_path)
     #main2()
     #main_generate_code()
     #generate_api.generate_code('pybenchmark_2k.jsonl')
@@ -378,8 +384,8 @@ def main_generate_code():
     parser = argparse.ArgumentParser()
     # 添加参数 
     parser.add_argument('--summary_cuda', type=int, default=-1)
-    parser.add_argument('--lang', type=str, default='python', choices=['python', 'java'])
-    parser.add_argument('--repo_dir', type=str, default='repos/sota_test', choices=['repos/python', 'repos/java', 'repos/sota_test', 'repos/repoeval_api', '/data/dengle/repofuse/crosscodeeval_rawdata'])
+    parser.add_argument('--lang', type=str, default='cpp', choices=['python', 'java', 'cpp'])
+    parser.add_argument('--repo_dir', type=str, default='repos/sota_test/C++Examples', choices=['repos/python', 'repos/java', 'repos/sota_test', 'repos/repoeval_api', '/data/dengle/repofuse/crosscodeeval_rawdata', 'repos/sota_test/C++Examples'])
     parser.add_argument('--encode_cuda', type=str, default='0')
     parser.add_argument('--benchmark', type=str, default='sota_test', choices=['projbench', 'cceval', 'sota_test', 'repoeval_api'])
     parser.add_argument('--rg_file', type=str, default='predictions/sota_test/pybenchmark_2k.jsonl',help='需要用到第一次检索的相似代码') # datasets/projbench/pybenchmark_2k.jsonl
@@ -408,9 +414,10 @@ def main_generate_code():
     #由于process_infile方法(main2)中需要读取repo下的文件，因此input_filepath必须在repo/sota_test之下
     #read_undo_code负责将py文件读取为jsonl格式，其处理文件路径时，也假定了文件放在repo/sota_test之下
     #目前输入的文件是一个纯粹的测试文件，编的
-    input_filepath = 'repos/sota_test/projectA/Pipe参数化.py'
+    input_filepath = 'repos/sota_test/C++Examples/自定义对象布置工具/ToolArchWallDemoTest.cpp'
     output_jsonlpath = 'datasets/projbench/pybenchmark_test.jsonl'
-    ReadUndoCode.read_undo_code(input_filepath, output_jsonlpath)
+    repos = args.repo_dir
+    ReadUndoCode.read_undo_code(repos, input_filepath, output_jsonlpath)
 
     #main2
     process_infile(args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)
@@ -436,6 +443,6 @@ def main_generate_code():
 
 
 if __name__ == '__main__':
-    main_build_base()
+    #main_build_base()
     main_generate_code()
     
