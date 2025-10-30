@@ -141,7 +141,7 @@ def generate_codes(in_path, out_path, logger: logging.Logger, m_type='n3_ds'):
         model = ApiModel(m_type)
         tokenizer = model.tokenizer
     logger.info('loaded model')
-    for line in tqdm(lines, colour="MAGENTA", desc='LLM codes...'):
+    for line in tqdm(lines, colour="green", desc='LLM codes...'):
         # 生成代码
         example_json = json.loads(line)
         task_id = example_json['metadata']['task_id']
