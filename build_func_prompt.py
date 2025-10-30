@@ -26,12 +26,13 @@ class FuncPromptBuilder:
             # print(f"loading database: {repo}")
             cache_path = f'./cache/func_base/{benchmark}_{repo}_encoded.pkl' if benchmark is not None else f'./cache/func_base/{repo}_encoded.pkl'
             repo_base = Utils.load_pickle(cache_path)
-            idx_mapping, uer_matrix, fsr_matrix = self.build_database(repo_base)
+            idx_mapping, uer_matrix, fsr_matrix, fuc_matrix = self.build_database(repo_base)
             self.func_database_dict[repo] = {
                 'data': repo_base,
                 'idx_mapping': idx_mapping,
                 'uer_matrix': uer_matrix,
-                'fsr_matrix': fsr_matrix
+                'fsr_matrix': fsr_matrix,
+                'fuc_matrix': fuc_matrix
             }
             
 
@@ -40,8 +41,10 @@ class FuncPromptBuilder:
         idx_mapping = []
         uer_tensors = []
         fsr_tensors = []
+        fuc_tensors = []
         for o_idx, item in enumerate(repo_base):
             fsr_tensors.append(item['summary_vec'])
+            fuc_tensors.append(item['func_vec'])
             ue_set = set()
             for ue in item['doc_list']:
                 if ue['doc'] in ue_set:
@@ -52,7 +55,8 @@ class FuncPromptBuilder:
                     idx_mapping.append(o_idx)
         uer_result = torch.cat(uer_tensors, dim=0)
         fsr_result = torch.cat(fsr_tensors, dim=0)
-        return idx_mapping, uer_result, fsr_result
+        fuc_tensors = torch.cat(fuc_tensors, dim=0)
+        return idx_mapping, uer_result, fsr_result, fuc_tensors
 
     @staticmethod
     def get_last_line(example):
@@ -166,6 +170,7 @@ class FuncPromptBuilder:
     def get_similar_code(self, repo, inputcode, task_id,  k=4,):
         new_examples = []
         #inputcode=self.remove_annotation(inputcode)  去掉注释以启用将输入的注释删除
+        inputcode = ''.join(inputcode.split('\n')[-4:])
         new_examples = self.similar_code_process(repo, inputcode, task_id, k=k)
         return new_examples
     
@@ -176,13 +181,13 @@ class FuncPromptBuilder:
             return None
         in_embedding = self.encoder.encode_text(inputcode)
         database = self.func_database_dict[repo]
-        matrix = database['uer_matrix']
-        idx_mapping = database['idx_mapping']
+        matrix = database['fuc_matrix']
+        #idx_mapping = database['idx_mapping']
         scores = Similarity.cossim_tensors(in_embedding, matrix)
 
         idxs = heapq.nlargest(k*4, range(len(scores)), scores.__getitem__)
-        real_idxs = list(dict.fromkeys([idx_mapping[i] for i in idxs]))
-        res = [database['data'][i] for i in real_idxs]
+        #real_idxs = list(dict.fromkeys([idx_mapping[i] for i in idxs]))
+        res = [database['data'][i] for i in idxs]
         # idx = scores.index(max(scores))
         res = res[:k]
         res = self.build_similar_code(res)

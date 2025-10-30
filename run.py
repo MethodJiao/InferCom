@@ -414,7 +414,7 @@ def main_generate_code():
     #由于process_infile方法(main2)中需要读取repo下的文件，因此input_filepath必须在repo/sota_test之下
     #read_undo_code负责将py文件读取为jsonl格式，其处理文件路径时，也假定了文件放在repo/sota_test之下
     #目前输入的文件是一个纯粹的测试文件，编的
-    input_filepath = 'repos/sota_test/C++Examples/自定义对象布置工具/ToolArchWallDemoTest.cpp'
+    input_filepath = 'repos/sota_test/C++Examples/自定义对象布置工具/TestCode.cpp'
     output_jsonlpath = 'datasets/projbench/pybenchmark_test.jsonl'
     repos = args.repo_dir
     ReadUndoCode.read_undo_code(repos, input_filepath, output_jsonlpath)
@@ -443,6 +443,6 @@ def main_generate_code():
 
 
 if __name__ == '__main__':
-    #main_build_base()
-    main_generate_code()
+    main_build_base()
+    #main_generate_code()
     

@@ -114,8 +114,10 @@ def summary_codes(repos, lang, benchmark=None, summary_cuda=3):
             continue
         func_base = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo}.pkl')
         summary_list = []
+        func_list = []
         for func in tqdm(func_base, desc=f'process {repo}'):
             body = func['metadata']['func_body']
+            func_list.append(body)
             prompt = prompt_template.replace('@{}@', body)
             func_summary = model.summarize_code(prompt).strip()
             func_summary = postprocess_llama(func_summary)
@@ -123,6 +125,8 @@ def summary_codes(repos, lang, benchmark=None, summary_cuda=3):
             # print(func_summary)
 
         Utils.dump_pickle(summary_list, out_path)
+        Utils.dump_pickle(func_list, f'./cache/func_base/{benchmark + "_" + repo}_func.pkl')
+
 
 # def summary_code_use_llm(repos):
 #     prompt_template = open('./prompt').read()
@@ -164,6 +168,7 @@ def encode_texts(repos, encode_cuda, benchmark=None):
     unixcoder_enc = UnixCoder(encode_cuda)
     for repo in repos:
         summary_list = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo}_summary.pkl')
+        func_list = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo}_func.pkl')
         func_base = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo}.pkl')
         # 多线程encode：doc_list[idx][doc_vec] = encode(doc_list[idx])
         # summary_vec = encode(summary)
@@ -176,7 +181,10 @@ def encode_texts(repos, encode_cuda, benchmark=None):
                 summary_vec = unixcoder_enc.encode_text(summary)
             else:
                 summary_vec = func_item['doc_list'][0]['doc_vec']
+            if func_list:
+                func_vec = unixcoder_enc.encode_text(func_list[idx])
             func_item['summary_vec'] = summary_vec
+            func_item['func_vec'] = func_vec
         with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
             futures = [executor.submit(process_item, idx) for idx in range(len(summary_list))]
             for future in tqdm(
