@@ -12,9 +12,10 @@ import time
 def get_logger(log_file):
     logger = logging.getLogger(log_file)
     logger.setLevel(logging.DEBUG)
-    
+
     info_handler = logging.StreamHandler()
-    info_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    info_handler.setFormatter(logging.Formatter(
+        "%(asctime)s - %(levelname)s - %(message)s"))
 
     fh = logging.FileHandler(log_file)
     fh.setLevel(logging.DEBUG)
@@ -24,6 +25,7 @@ def get_logger(log_file):
     # logger.addHandler(info_handler)
     logger.addHandler(fh)
     return logger
+
 
 class SotaModel:
     def __init__(self):
@@ -43,7 +45,7 @@ Complete the code (do not repeat the prefix):
             base_url='http://10.0.200.1:1025/v1',
             api_key="*"
         )
-        self.model="DeepSeek-V3-0324"
+        self.model = "DeepSeek-V3-0324"
 
     def complete(self, prefix):
         content = self.prompt.replace("<prefix>", prefix)
@@ -55,7 +57,7 @@ Complete the code (do not repeat the prefix):
             max_tokens=128
         )
         return self._process_output(completion.choices[0].message.content)
-    
+
     def _process_output(self, output):
         start = output.find("<output_start>") + len("<output_start>")
         if "<output_end>" in output:
@@ -68,6 +70,7 @@ Complete the code (do not repeat the prefix):
             end = len(output)
         ans = output[start:end]
         return ans
+
 
 class ApiModel:
     def __init__(self, m_type='n3_ds'):
@@ -95,8 +98,9 @@ class ApiModel:
         }
         self.config = self.url_dict[m_type]
         self.client = OpenAI(api_key="*", base_url=self.config['url'])
-        self.tokenizer = AutoTokenizer.from_pretrained(self.config['model_name'])
-        
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.config['model_name'])
+
     def complete(self, prompt, retries=3, max_tokens=128):
         for i in range(retries):
             try:
@@ -117,7 +121,7 @@ class ApiModel:
                     time.sleep(sleep_time)
                 else:
                     return ''
-                
+
 
 def generate_codes(in_path, out_path, logger: logging.Logger, m_type='n3_ds'):
     logger.info(f'generates: {in_path}')
@@ -137,7 +141,7 @@ def generate_codes(in_path, out_path, logger: logging.Logger, m_type='n3_ds'):
         model = ApiModel(m_type)
         tokenizer = model.tokenizer
     logger.info('loaded model')
-    for line in tqdm(lines):
+    for line in tqdm(lines, colour="green", desc='LLM codes...'):
         # 生成代码
         example_json = json.loads(line)
         task_id = example_json['metadata']['task_id']
@@ -156,7 +160,8 @@ def generate_codes(in_path, out_path, logger: logging.Logger, m_type='n3_ds'):
 
         example_json['pred_res'] = completion
         choices = []
-        res_lines = [line.strip() for line in completion.splitlines() if line.strip()]
+        res_lines = [line.strip()
+                     for line in completion.splitlines() if line.strip()]
         if len(res_lines) == 0:
             res_lines.append("")
         choice = {
@@ -164,11 +169,13 @@ def generate_codes(in_path, out_path, logger: logging.Logger, m_type='n3_ds'):
         }
         choices.append(choice)
         example_json['choices'] = choices
-        
+
         with open(out_path, mode='a', encoding='utf-8') as f:
             f.write(json.dumps(example_json) + '\n')
-    
-#newFuction
+
+# newFuction
+
+
 @staticmethod
 def generate_code(filename):
     m_type = 'sota'

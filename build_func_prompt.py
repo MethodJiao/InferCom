@@ -150,7 +150,7 @@ class FuncPromptBuilder:
  
     def run(self, examples, use_doc=True, use_summary=True, k=4):
         new_examples = []
-        for example in tqdm(examples):
+        for example in tqdm(examples,desc='building func prompt...'):
             result = self.process_example(example, use_doc=use_doc, use_summary=use_summary, k=k)
             if result:
                 new_examples.append(result)

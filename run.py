@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import sys
 
 from tqdm import tqdm
 
@@ -443,6 +444,21 @@ def main_generate_code():
 
 
 if __name__ == '__main__':
+    # 提示用户选择要执行的主流程：1 执行构建基础，2 执行生成代码
+    try:
+        print("请选择要执行的操作：\n1) 构建代码仓库基础 (main_build_base)\n2) 生成推理代码 (main_generate_code)")
+        choice = input('输入 1 或 2: ').strip()
+    except (KeyboardInterrupt, EOFError):
+        print('\n未输入，程序退出')
+        sys.exit(1)
+
+    if choice == '1':
+        main_build_base()
+    elif choice == '2':
+        main_generate_code()
+    else:
+        print('输入错误：请输入 1 或 2')
+        sys.exit(1)
     main_build_base()
     #main_generate_code()
     
