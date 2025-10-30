@@ -459,6 +459,6 @@ if __name__ == '__main__':
     else:
         print('输入错误：请输入 1 或 2')
         sys.exit(1)
-    main_build_base()
+    # main_build_base()
     #main_generate_code()
     
