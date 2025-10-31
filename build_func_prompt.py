@@ -10,10 +10,11 @@ from utils.summarize_code import SummaryAPIModel, SummaryModel, postprocess_llam
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class FuncPromptBuilder:
-    def __init__(self, repos, benchmark, lang, summary_cuda=3, encode_cuda='cpu'):
+    def __init__(self, repo_dir, benchmark, lang, summary_cuda=3, encode_cuda='cpu'):
+        repo_dir = repo_dir.split('/')[-1]
         self.encoder = UnixCoder(encode_cuda)
         self.tokenizer = CodexTokenizer()
-        self.repos = repos
+        self.repo_dir = repo_dir
         self.func_database_dict = dict()
         self.uer_base = dict()
         self.fsr_base = dict()
@@ -22,18 +23,18 @@ class FuncPromptBuilder:
             self.summary_model = SummaryAPIModel()
         else:
             self.summary_model = SummaryModel(cuda=summary_cuda)
-        for repo in tqdm(repos, desc='loading database...'):
-            # print(f"loading database: {repo}")
-            cache_path = f'./cache/func_base/{benchmark}_{repo}_encoded.pkl' if benchmark is not None else f'./cache/func_base/{repo}_encoded.pkl'
-            repo_base = Utils.load_pickle(cache_path)
-            idx_mapping, uer_matrix, fsr_matrix, fuc_matrix = self.build_database(repo_base)
-            self.func_database_dict[repo] = {
-                'data': repo_base,
-                'idx_mapping': idx_mapping,
-                'uer_matrix': uer_matrix,
-                'fsr_matrix': fsr_matrix,
-                'fuc_matrix': fuc_matrix
-            }
+
+        # print(f"loading database: {repo}")
+        cache_path = f'./cache/func_base/{benchmark}_{repo_dir}_encoded.pkl' if benchmark is not None else f'./cache/func_base/{repo_dir}_encoded.pkl'
+        repo_base = Utils.load_pickle(cache_path)
+        idx_mapping, uer_matrix, fsr_matrix, fuc_matrix = self.build_database(repo_base)
+        self.func_database_dict = {
+            'data': repo_base,
+            'idx_mapping': idx_mapping,
+            'uer_matrix': uer_matrix,
+            'fsr_matrix': fsr_matrix,
+            'fuc_matrix': fuc_matrix
+        }
             
 
     def build_database(self, repo_base):
@@ -119,9 +120,9 @@ class FuncPromptBuilder:
         return new_prompt
 
     def process_example(self, example, use_doc=True, use_summary=True, k=4):
-        repo = example['metadata']['task_id'].split('/')[-2]
-        if repo not in self.func_database_dict:
-            return None
+        #repo = example['metadata']['task_id'].split('/')[-2]
+        #if repo not in self.func_database_dict:
+        #    return None
         ret_funcs = []
         ret_funcs0 = []
         ret_funcs1 = []
@@ -129,11 +130,11 @@ class FuncPromptBuilder:
         last_line = self.get_last_line(example).strip()
         if last_line:  
             if use_doc:
-                ret_funcs0 = self.get_topk_func(last_line, self.func_database_dict[repo], k=k*4, example=example)
+                ret_funcs0 = self.get_topk_func(last_line, self.func_database_dict, k=k*4, example=example)
                 ret_funcs.extend(ret_funcs0[:k])
             if use_summary:
                 last_lines = self.get_last_lines(example).strip()
-                ret_funcs1, summary_query = self.get_topk_func_by_summary(last_lines, self.func_database_dict[repo], k=k*4)
+                ret_funcs1, summary_query = self.get_topk_func_by_summary(last_lines, self.func_database_dict, k=k*4)
                 ret_funcs.extend(ret_funcs1[:k])
         new_prompt_prefix = self.build_new_prompt(ret_funcs)
         doc_prompt = self.build_new_prompt(ret_funcs0[:k])
@@ -167,20 +168,18 @@ class FuncPromptBuilder:
         return inputcode
     
     #newFuction
-    def get_similar_code(self, repo, inputcode, task_id,  k=4,):
+    def get_similar_code(self, inputcode, task_id,  k=4,):
         new_examples = []
         #inputcode=self.remove_annotation(inputcode)  去掉注释以启用将输入的注释删除
         #inputcode = ''.join(inputcode.split('\n')[-4:])
-        new_examples = self.similar_code_process(repo, inputcode, task_id, k=k)
+        new_examples = self.similar_code_process(inputcode, task_id, k=k)
         return new_examples
     
     #newFuction
-    def similar_code_process(self, repo, inputcode, task_id, k=3):
-        repo = repo
-        if repo not in self.func_database_dict:
-            return None
+    def similar_code_process(self, inputcode, task_id, k=3):
+        
         in_embedding = self.encoder.encode_text(inputcode)
-        database = self.func_database_dict[repo]
+        database = self.func_database_dict
         matrix = database['fuc_matrix']
         #idx_mapping = database['idx_mapping']
         scores = Similarity.cossim_tensors(in_embedding, matrix)

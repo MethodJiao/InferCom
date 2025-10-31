@@ -120,74 +120,77 @@ class FuncBaseBuilder:
         self.repo_dir = repo_dir
 
     def build(self, benchmark=None):
+        func_list = []
+        dir = self.repo_dir.split('/')[-1]
+        out_path = f'./cache/func_base/{benchmark}_{dir}.pkl'
+        if os.path.exists(out_path):
+            print(f"{repo}: cache")
+            return
         for repo in self.repos:
-            out_path = f'./cache/func_base/{benchmark}_{repo}.pkl'
-            if os.path.exists(out_path):
-                print(f"{repo}: cache")
-                continue
-            func_list, class_list = self.get_func_list(repo_name=repo)
-            func_database = []
-            # for class_dict in class_list:
-            #     print(class_dict)
-            for example in tqdm(func_list, desc=f'processing {repo}'):
-                func_def = example['func_def']
-                class_def = example['class_def']
-                example['func'] = process_func(func_def)
-                doc_list = []
-                if class_def:
-                    example['class'] = process_class(class_def)
-                    if example['func']['name'] in ['__init__', example['class']['name']]:  # C++ constructors
-                        for i_idx, i in enumerate([example['class']['name'], f"{camel_to_snake(example['class']['name'])} = {example['class']['name']}"]):
-                            for j_idx, j in enumerate([example['func']['params'], '()']):
-                                doc_list.append({
-                                    'doc': i + j,
-                                    'doc_type': ('init', i_idx, j_idx)
-                                })
-                    elif example['func']['name'].startswith('~'):  # C++ destructors
-                        continue  # Skip destructors for now
-                    else:
-                        # Check for static methods
-                        if 'static' in example['specifiers']:
-                            for i_idx, i in enumerate([f"{camel_to_snake(example['class']['name'])}.{example['func']['name']}", f"{example['class']['name']}.{example['func']['name']}"]):
-                                for j_idx, j in enumerate([example['func']['params'], '()']):
-                                    doc_list.append({
-                                        'doc': i + j,
-                                        'doc_type': ('static', i_idx, j_idx)
-                                    })
-                        else:
-                            for i_idx, i in enumerate([f"{camel_to_snake(example['class']['name'])}.{example['func']['name']}"]):
-                                for j_idx, j in enumerate([example['func']['params'], '()']):
-                                    doc_list.append({
-                                        'doc': i + j,
-                                        'doc_type': ('common_class', i_idx, j_idx)
-                                    })
-                    info = example['class']['sign'] + ':\n    ' + '\n    '.join(example['specifiers']) + '\n    ' + example['func']['sign']
-                else:
-                    example['class'] = None
-                    for i_idx, i in enumerate([f"{example['func']['name']}", f"{Path(example['file_path']).stem}.{example['func']['name']}"]):
+            func_list_temp, class_list = self.get_func_list(repo_name=repo)
+            func_list.extend(func_list_temp)
+        func_database = []
+        # for class_dict in class_list:
+        #     print(class_dict)
+        for example in tqdm(func_list, desc=f'processing {dir}'):
+            func_def = example['func_def']
+            class_def = example['class_def']
+            example['func'] = process_func(func_def)
+            doc_list = []
+            if class_def:
+                example['class'] = process_class(class_def)
+                if example['func']['name'] in ['__init__', example['class']['name']]:  # C++ constructors
+                    for i_idx, i in enumerate([example['class']['name'], f"{camel_to_snake(example['class']['name'])} = {example['class']['name']}"]):
                         for j_idx, j in enumerate([example['func']['params'], '()']):
                             doc_list.append({
                                 'doc': i + j,
-                                'doc_type': ('common', i_idx, j_idx)
+                                'doc_type': ('init', i_idx, j_idx)
                             })
-                    info = example['func']['sign']
+                elif example['func']['name'].startswith('~'):  # C++ destructors
+                    continue  # Skip destructors for now
+                else:
+                    # Check for static methods
+                    if 'static' in example['specifiers']:
+                        for i_idx, i in enumerate([f"{camel_to_snake(example['class']['name'])}.{example['func']['name']}", f"{example['class']['name']}.{example['func']['name']}"]):
+                            for j_idx, j in enumerate([example['func']['params'], '()']):
+                                doc_list.append({
+                                    'doc': i + j,
+                                    'doc_type': ('static', i_idx, j_idx)
+                                })
+                    else:
+                        for i_idx, i in enumerate([f"{camel_to_snake(example['class']['name'])}.{example['func']['name']}"]):
+                            for j_idx, j in enumerate([example['func']['params'], '()']):
+                                doc_list.append({
+                                    'doc': i + j,
+                                    'doc_type': ('common_class', i_idx, j_idx)
+                                })
+                info = example['class']['sign'] + ':\n    ' + '\n    '.join(example['specifiers']) + '\n    ' + example['func']['sign']
+            else:
+                example['class'] = None
+                for i_idx, i in enumerate([f"{example['func']['name']}", f"{Path(example['file_path']).stem}.{example['func']['name']}"]):
+                    for j_idx, j in enumerate([example['func']['params'], '()']):
+                        doc_list.append({
+                            'doc': i + j,
+                            'doc_type': ('common', i_idx, j_idx)
+                        })
+                info = example['func']['sign']
 
-                # embedding = self.encoder.encode_text(doc)
-                fpath = tuple([i for i in example['file_path'].replace(self.repo_dir, '').split('/') if i.strip()])
-                func_body = func_def.text.decode()
-                metadata = {
-                    'func': example['func'],
-                    'func_body': func_body,
-                    'class': example['class'],
-                    'lineno': func_def.start_point[0]
-                }
-                func_database.append({
-                    'fpath': fpath,
-                    'metadata': metadata,
-                    'doc_list': doc_list,
-                    'info': info,
-                })
-            Utils.dump_pickle(func_database, out_path)
+            # embedding = self.encoder.encode_text(doc)
+            fpath = tuple([i for i in example['file_path'].replace(self.repo_dir, '').split('/') if i.strip()])
+            func_body = func_def.text.decode()
+            metadata = {
+                'func': example['func'],
+                'func_body': func_body,
+                'class': example['class'],
+                'lineno': func_def.start_point[0]
+            }
+            func_database.append({
+                'fpath': fpath,
+                'metadata': metadata,
+                'doc_list': doc_list,
+                'info': info,
+            })
+        Utils.dump_pickle(func_database, out_path)
 
     def get_func_list(self, repo_name):
         files_list = glob.glob(os.path.join(self.repo_dir, repo_name, '**/*.cpp'), recursive=True)

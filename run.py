@@ -15,8 +15,8 @@ from build_cpp_func_base import FuncBaseBuilder as CppFuncBaseBuilder
 from read_undo_code import ReadUndoCode
 import generate_api
 
-def process_infile(in_file, out_file, repo_dir, context_len=1000):
-    build_infile(in_file, out_file, infile_len=context_len, repo_dir=repo_dir)
+def process_infile(infile_path, in_file, out_file, repo_dir, context_len=1000):
+    build_infile(infile_path, in_file, out_file, infile_len=context_len, repo_dir=repo_dir)
 
 
 def build_function_database(args):
@@ -29,8 +29,8 @@ def build_function_database(args):
     elif args.lang == 'cpp':
         func_base_builder = CppFuncBaseBuilder(args.repos, args.repo_dir)
     func_base_builder.build(benchmark=args.benchmark)
-    summary_codes(args.repos, lang=args.lang, benchmark=args.benchmark, summary_cuda=args.summary_cuda)
-    encode_texts(args.repos, benchmark=args.benchmark, encode_cuda=args.encode_cuda)
+    summary_codes(args.repo_dir, lang=args.lang, benchmark=args.benchmark, summary_cuda=args.summary_cuda)
+    encode_texts(args.repo_dir, benchmark=args.benchmark, encode_cuda=args.encode_cuda)
 
 
 def build_func_prompt(args):
@@ -39,7 +39,7 @@ def build_func_prompt(args):
     os.makedirs(cache_dir, exist_ok=True)
     cache_file = os.path.join(cache_dir, f'{args.benchmark}_{args.lang}.pkl')
     if not os.path.exists(cache_file):
-        func_builder = FuncPromptBuilder(args.repos, summary_cuda=args.summary_cuda, benchmark=args.benchmark, lang=args.lang, encode_cuda=args.encode_cuda)
+        func_builder = FuncPromptBuilder(args.repo_dir, summary_cuda=args.summary_cuda, benchmark=args.benchmark, lang=args.lang, encode_cuda=args.encode_cuda)
         new_examples = func_builder.run(examples, use_doc=True, use_summary=True, k=args.k)
         Utils.dump_pickle(new_examples, cache_file)
     new_examples = Utils.load_pickle(cache_file)
@@ -53,9 +53,8 @@ def search_similar_code(args):
     examples = Utils.load_jsonl(args.infile_input)
     task_id =examples[0]['metadata']['task_id']
     input_code = examples[0]['prompt']
-    func_builder = FuncPromptBuilder(args.repos, summary_cuda=args.summary_cuda, benchmark=args.benchmark, lang=args.lang, encode_cuda=args.encode_cuda)
-    repo = task_id.split('/')[-2]
-    new_examples = func_builder.get_similar_code(repo, input_code, task_id, k=args.k)
+    func_builder = FuncPromptBuilder(args.repo_dir, summary_cuda=args.summary_cuda, benchmark=args.benchmark, lang=args.lang, encode_cuda=args.encode_cuda)
+    new_examples = func_builder.get_similar_code(input_code, task_id, k=args.k)
     Utils.dump_jsonl(new_examples, 'test_res_rc.jsonl')
 
 def combine_rc_and_api(args):
@@ -400,6 +399,7 @@ def main_generate_code():
     parser.add_argument('--fsr', type=int, default=1, choices=[0, 1])
     parser.add_argument('--uer', type=int, default=1, choices=[0, 1])
     parser.add_argument('--prompt_output',default='prompts/sota_test/pybenchmark_4k.jsonl',type=str)
+    parser.add_argument('--infile_path',default='',type=str, help='输入的待完善的代码文件路径')
     # 解析参数
     args = parser.parse_args()
     # 设置repos
@@ -415,13 +415,15 @@ def main_generate_code():
     #由于process_infile方法(main2)中需要读取repo下的文件，因此input_filepath必须在repo/sota_test之下
     #read_undo_code负责将py文件读取为jsonl格式，其处理文件路径时，也假定了文件放在repo/sota_test之下
     #目前输入的文件是一个纯粹的测试文件，编的
-    input_filepath = 'repos/sota_test/C++Examples/自定义对象布置工具/TestCode.cpp'
+    input_filepath = 'TestCode.cpp'
     output_jsonlpath = 'datasets/projbench/pybenchmark_test.jsonl'
+    if args.infile_path == '':
+        args.infile_path = input_filepath
     repos = args.repo_dir
     ReadUndoCode.read_undo_code(repos, input_filepath, output_jsonlpath)
 
     #main2
-    process_infile(args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)
+    process_infile(args.infile_path, args.infile_input, args.infile_output, context_len=args.infile_len, repo_dir=args.repo_dir)
     args.process = 'search_similar_code'
     #进行完一个步骤之后，需要相应的改变args.process，方便后续调试
 

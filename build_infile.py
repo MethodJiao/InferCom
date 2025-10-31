@@ -102,9 +102,10 @@ class InFileContextProcessor:
 
         return structured_prompt
 
-    def get_infile_context(self, example, simple_token_limit=1048, use_structed=False, structed_prompt_len=512):
+    def get_infile_context(self, infile_path, example, simple_token_limit=1048, use_structed=False, structed_prompt_len=512):
         o_prompt = example['prompt']
-        fpath = os.path.join(self.repo_dir, *example['metadata']['fpath_tuple'])
+        #fpath = os.path.join(self.repo_dir, *example['metadata']['fpath_tuple'])
+        fpath = infile_path
         row = example['metadata']['line_no']
         if 'col' not in example['metadata']:
             file_content = open(fpath, 'r', encoding='utf8').read()
@@ -136,12 +137,12 @@ class InFileContextProcessor:
         return simple_prompt
 
 
-def build_infile(in_file, out_file, repo_dir, infile_len=4096):
+def build_infile(infile_path, in_file, out_file, repo_dir, infile_len=4096):
     examples = Utils.load_jsonl(in_file)
     infile_context_processor = InFileContextProcessor(repo_dir)
     samples = []
     for example in tqdm(examples):
-        simple_prompt = infile_context_processor.get_infile_context(example, simple_token_limit=infile_len,
+        simple_prompt = infile_context_processor.get_infile_context(infile_path, example, simple_token_limit=infile_len,
                                                                     use_structed=False)
         # example['o_prompt'] = example['prompt']
         example['prompt'] = simple_prompt

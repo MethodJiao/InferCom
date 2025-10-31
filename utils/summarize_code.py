@@ -99,33 +99,32 @@ def postprocess_llama(summary):
         'summarize the code:', '').strip()
     return summary
 
-def summary_codes(repos, lang, benchmark=None, summary_cuda=3):
+def summary_codes(repo_dir, lang, benchmark=None, summary_cuda=3):
     if summary_cuda == -1:
         model = SummaryAPIModel()
     else:
         model = SummaryModel(cuda=summary_cuda)
         
     prompt_template = open(f'./utils/{lang}.prompt').read()
+    repo_dir = repo_dir.split('/')[-1]
+    out_path = f'./cache/func_base/{benchmark + "_" + repo_dir}_summary.pkl'
+    if os.path.exists(out_path):
+        print(f'{repo_dir}: summary cache')
+        return
+    func_base = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo_dir}.pkl')
+    summary_list = []
+    func_list = []
+    for func in tqdm(func_base, desc=f'process {repo_dir}'):
+        body = func['metadata']['func_body']
+        func_list.append(body)
+        prompt = prompt_template.replace('@{}@', body)
+        func_summary = model.summarize_code(prompt).strip()
+        func_summary = postprocess_llama(func_summary)
+        summary_list.append(func_summary)
+        # print(func_summary)
 
-    for repo in repos:
-        out_path = f'./cache/func_base/{benchmark + "_" + repo}_summary.pkl'
-        if os.path.exists(out_path):
-            print(f'{repo}: summary cache')
-            continue
-        func_base = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo}.pkl')
-        summary_list = []
-        func_list = []
-        for func in tqdm(func_base, desc=f'process {repo}'):
-            body = func['metadata']['func_body']
-            func_list.append(body)
-            prompt = prompt_template.replace('@{}@', body)
-            func_summary = model.summarize_code(prompt).strip()
-            func_summary = postprocess_llama(func_summary)
-            summary_list.append(func_summary)
-            # print(func_summary)
-
-        Utils.dump_pickle(summary_list, out_path)
-        Utils.dump_pickle(func_list, f'./cache/func_base/{benchmark + "_" + repo}_func.pkl')
+    Utils.dump_pickle(summary_list, out_path)
+    Utils.dump_pickle(func_list, f'./cache/func_base/{benchmark + "_" + repo_dir}_func.pkl')
 
 
 # def summary_code_use_llm(repos):
@@ -164,35 +163,35 @@ def process_not_has_e3(example):
         return '\n'.join(res).strip()
 
 
-def encode_texts(repos, encode_cuda, benchmark=None):
+def encode_texts(repo_dir, encode_cuda, benchmark=None):
     unixcoder_enc = UnixCoder(encode_cuda)
-    for repo in repos:
-        summary_list = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo}_summary.pkl')
-        func_list = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo}_func.pkl')
-        func_base = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo}.pkl')
-        # 多线程encode：doc_list[idx][doc_vec] = encode(doc_list[idx])
-        # summary_vec = encode(summary)
-        def process_item(idx):
-            func_item = func_base[idx]
-            summary = summary_list[idx]
-            for doc_item in func_item['doc_list']:
-                doc_item['doc_vec'] = unixcoder_enc.encode_text(doc_item['doc'])
-            if summary:
-                summary_vec = unixcoder_enc.encode_text(summary)
-            else:
-                summary_vec = func_item['doc_list'][0]['doc_vec']
-            if func_list:
-                func_vec = unixcoder_enc.encode_text(func_list[idx])
-            func_item['summary_vec'] = summary_vec
-            func_item['func_vec'] = func_vec
-        with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
-            futures = [executor.submit(process_item, idx) for idx in range(len(summary_list))]
-            for future in tqdm(
-                as_completed(futures),
-                total=len(summary_list),
-                colour="MAGENTA",
-            ):
-                future.result()
-        Utils.dump_pickle(func_base, f'./cache/func_base/{benchmark + "_" + repo}_encoded.pkl')
+    repo_dir = repo_dir.split('/')[-1]
+    summary_list = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo_dir}_summary.pkl')
+    func_list = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo_dir}_func.pkl')
+    func_base = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo_dir}.pkl')
+    # 多线程encode：doc_list[idx][doc_vec] = encode(doc_list[idx])
+    # summary_vec = encode(summary)
+    def process_item(idx):
+        func_item = func_base[idx]
+        summary = summary_list[idx]
+        for doc_item in func_item['doc_list']:
+            doc_item['doc_vec'] = unixcoder_enc.encode_text(doc_item['doc'])
+        if summary:
+            summary_vec = unixcoder_enc.encode_text(summary)
+        else:
+            summary_vec = func_item['doc_list'][0]['doc_vec']
+        if func_list:
+            func_vec = unixcoder_enc.encode_text(func_list[idx])
+        func_item['summary_vec'] = summary_vec
+        func_item['func_vec'] = func_vec
+    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+        futures = [executor.submit(process_item, idx) for idx in range(len(summary_list))]
+        for future in tqdm(
+            as_completed(futures),
+            total=len(summary_list),
+            colour="MAGENTA",
+        ):
+            future.result()
+    Utils.dump_pickle(func_base, f'./cache/func_base/{benchmark + "_" + repo_dir}_encoded.pkl')
 
 
