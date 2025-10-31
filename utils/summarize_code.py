@@ -164,8 +164,12 @@ def process_not_has_e3(example):
 
 
 def encode_texts(repo_dir, encode_cuda, benchmark=None):
-    unixcoder_enc = UnixCoder(encode_cuda)
     repo_dir = repo_dir.split('/')[-1]
+    out_path = f'./cache/func_base/{benchmark + "_" + repo_dir}_encoded.pkl'
+    if os.path.exists(out_path):
+        print(f'{repo_dir}: encode cache')
+        return
+    unixcoder_enc = UnixCoder(encode_cuda)
     summary_list = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo_dir}_summary.pkl')
     func_list = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo_dir}_func.pkl')
     func_base = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo_dir}.pkl')
@@ -192,6 +196,6 @@ def encode_texts(repo_dir, encode_cuda, benchmark=None):
             colour="MAGENTA",
         ):
             future.result()
-    Utils.dump_pickle(func_base, f'./cache/func_base/{benchmark + "_" + repo_dir}_encoded.pkl')
+    Utils.dump_pickle(func_base, out_path)
 
 

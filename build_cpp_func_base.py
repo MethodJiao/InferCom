@@ -124,8 +124,11 @@ class FuncBaseBuilder:
         dir = self.repo_dir.split('/')[-1]
         out_path = f'./cache/func_base/{benchmark}_{dir}.pkl'
         if os.path.exists(out_path):
-            print(f"{repo}: cache")
+            print(f"{dir}: cache")
             return
+        if len(self.repos) == 0:
+            func_list_temp, class_list = self.get_func_list(repo_name='')
+            func_list.extend(func_list_temp)
         for repo in self.repos:
             func_list_temp, class_list = self.get_func_list(repo_name=repo)
             func_list.extend(func_list_temp)

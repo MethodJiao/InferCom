@@ -108,15 +108,19 @@ class FuncBaseBuilder:
         self.repo_dir = repo_dir
 
     def build(self, benchmark=None):
+        dir = self.repo_dir.split('/')[-1]
+        out_path = f'./cache/func_base/{benchmark}_{dir}.pkl'
+        if os.path.exists(out_path):
+            print(f"{dir}: cache")
+            return
+        func_list = []
+        if len(self.repos) == 0:
+            func_list_temp = self.get_func_list(repo_name='')
+            func_list.extend(func_list_temp)
         for repo in self.repos:
-            if benchmark is None:
-                out_path = f'./cache/func_base/{repo}.pkl'
-            else:
-                out_path = f'./cache/func_base/{benchmark}_{repo}.pkl'
-            if os.path.exists(out_path):
-                print(f"{repo}: cache")
-                continue
-            func_list = self.get_func_list(repo_name=repo)
+            func_list_temp = self.get_func_list(repo_name=repo)
+            func_list.extend(func_list_temp)
+        if func_list:
             func_database = []
             for example in tqdm(func_list):
                 func_def = example['func_def']

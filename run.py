@@ -412,9 +412,7 @@ def main_generate_code():
     print(args)
 
     #设置输入的文件
-    #由于process_infile方法(main2)中需要读取repo下的文件，因此input_filepath必须在repo/sota_test之下
-    #read_undo_code负责将py文件读取为jsonl格式，其处理文件路径时，也假定了文件放在repo/sota_test之下
-    #目前输入的文件是一个纯粹的测试文件，编的
+    #目前输入的文件是一个纯粹的测试文件，编的 
     input_filepath = 'TestCode.cpp'
     output_jsonlpath = 'datasets/projbench/pybenchmark_test.jsonl'
     if args.infile_path == '':
