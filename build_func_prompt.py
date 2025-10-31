@@ -170,7 +170,7 @@ class FuncPromptBuilder:
     def get_similar_code(self, repo, inputcode, task_id,  k=4,):
         new_examples = []
         #inputcode=self.remove_annotation(inputcode)  去掉注释以启用将输入的注释删除
-        inputcode = ''.join(inputcode.split('\n')[-4:])
+        #inputcode = ''.join(inputcode.split('\n')[-4:])
         new_examples = self.similar_code_process(repo, inputcode, task_id, k=k)
         return new_examples
     
