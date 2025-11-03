@@ -107,7 +107,7 @@ class FuncBaseBuilder:
             func_database = []
             # for class_dict in class_list:
             #     print(class_dict)
-            for example in tqdm(func_list, desc=f'processing {dir}'):
+            for example in tqdm(func_list, desc=f'tree_sitter {dir}'):
                 func_def = example['func_def']
                 class_def = example['class_def']
                 example['func'] = process_func(func_def)
