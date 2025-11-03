@@ -114,7 +114,7 @@ def summary_codes(repo_dir, lang, benchmark=None, summary_cuda=3):
     func_base = Utils.load_pickle(f'./cache/func_base/{benchmark + "_" + repo_dir}.pkl')
     summary_list = []
     func_list = []
-    for func in tqdm(func_base, desc=f'summary {repo_dir}'):
+    for func in tqdm(func_base, colour="green", desc=f'summary {repo_dir}'):
         body = func['metadata']['func_body']
         func_list.append(body)
         prompt = prompt_template.replace('@{}@', body)
