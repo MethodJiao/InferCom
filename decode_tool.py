@@ -1,9 +1,11 @@
 #编码格式处理脚本
-
+#将所有的文件转换为指定的编码格式，比如utf-8
+#本文件默认将所有文件转换为utf-8编码格式
+#使用handle函数，传入文件路径列表，输出目录，目标编码格式即可
 import os
 from chardet.universaldetector import UniversalDetector
 
-
+@staticmethod
 def detcect_encoding(filepath):
     """检测文件编码
     Args:
@@ -28,7 +30,7 @@ def detcect_encoding(filepath):
     return fileencoding, confidence * 100
 
 @staticmethod
-def handle(input_file, output_dir, target_encoding):
+def handle(input_file, output_dir, target_encoding = 'utf-8'):
     if output_dir:
         if not os.path.exists(output_dir):
             answer = input(
@@ -56,6 +58,7 @@ def handle(input_file, output_dir, target_encoding):
             f.close()
             print('[+] 转码成功: %s(%s) -> %s(%s) [+] ' % (file, encoding, outpath,target_encoding))
 
+# 测试用，直接运行该文件即可
 if __name__ == '__main__':
     print("This is a decode tool module.")
     target_encoding = 'utf-8'

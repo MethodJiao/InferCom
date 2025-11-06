@@ -158,6 +158,8 @@ class FuncPromptBuilder:
         return new_examples
     
     #newFuction
+    # 去除输入代码中的注释部分
+    # 目前未启用
     def remove_annotation(self, inputcode):
         to_deals = inputcode.split('\n')
         new_inputcode = []
@@ -168,6 +170,7 @@ class FuncPromptBuilder:
         return inputcode
     
     #newFuction
+    # 获取相似代码片段，k为返回的相似代码片段数量
     def get_similar_code(self, inputcode, task_id,  k=4,):
         new_examples = []
         #inputcode=self.remove_annotation(inputcode)  去掉注释以启用将输入的注释删除
@@ -193,7 +196,8 @@ class FuncPromptBuilder:
         res = self.jsonl_handler(res, task_id)
         return res
 
-    #newFuction    
+    #newFuction  
+    # 构建相似代码片段的返回格式  
     def build_similar_code(self, func_list):
         new_res = []
         for func in func_list:
@@ -205,6 +209,7 @@ class FuncPromptBuilder:
         return new_res
     
     #newFuction
+    # 构建相似代码片段的jsonl格式
     def jsonl_handler(self, texts, task_id):
         top_k_context = []
         for text in texts:

@@ -48,7 +48,9 @@ def build_func_prompt(args):
         del temp_example['func_context']
     return new_examples
 
-#newFunction
+# newFunction
+# 搜索相似代码片段
+# 输出路径为test_res_rc.jsonl
 def search_similar_code(args):
     examples = Utils.load_jsonl(args.infile_input)
     task_id =examples[0]['metadata']['task_id']
@@ -90,7 +92,8 @@ def combine_rc_and_api(args):
         
 import argparse
 
-#第一步只需要进行代码仓库的构建，只需要读repo文件夹下的文件
+# 第一步只需要进行代码仓库的构建，只需要读repo文件夹下的文件
+# 构建仓库时，可能出现编码格式的问题，因此需要用到decode_tool.py中的handle函数
 def main_build_base():
     #main1()
     parser = argparse.ArgumentParser()
@@ -128,6 +131,8 @@ def main_build_base():
 
 
 def main_generate_code():
+
+    #清除缓存和中间文件
     #删除prompts和predictions文件夹下的目录
     predictions_path = 'predictions/sota_test'
     prompts_path = 'prompts/sota_test'
@@ -180,8 +185,8 @@ def main_generate_code():
     setattr(args, 'repos', repos)
     print(args)
 
-    #设置输入的文件
-    #目前输入的文件是一个纯粹的测试文件，编的 
+    #设置输入的文件路径和输出的jsonl文件路径
+    # 输出的jsonl文件路径为args.infile_input
     input_filepath = 'TestCode.cpp'
     output_jsonlpath = 'datasets/projbench/pybenchmark_test.jsonl'
     if args.infile_path == '':
